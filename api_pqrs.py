@@ -25,7 +25,6 @@ from datetime import datetime
 import re
 import os
 
-
 # Agregar el sistema al path
 sys.path.append(str(Path(__file__).parent))
 
@@ -61,32 +60,7 @@ if SISTEMA_DISPONIBLE:
 
 @app.route('/api/resolver-pqrs', methods=['POST'])
 def resolver_pqrs():
-    """
-    Busca una solución para un problema PQRS
-    
-    Body:
-    {
-        "problema": "Para el crédito 123 cambiar estado a 77",
-        "incluir_validacion": true,  // opcional
-        "ejecutar_automatico": false  // opcional
-    }
-    
-    Response:
-    {
-        "success": true,
-        "problema": "...",
-        "mejor_caso": {
-            "categoria": "Estados",
-            "problema_base": "...",
-            "sql": "UPDATE ...",
-            "respuesta": "...",
-            "similitud": 0.92
-        },
-        "validacion": { ... },  // si incluir_validacion=true
-        "otros_casos": [ ... ],
-        "timestamp": "2025-02-17T12:00:00"
-    }
-    """
+    """Busca una solución para un problema PQRS"""
     try:
         if not sistema:
             return jsonify({
@@ -94,7 +68,6 @@ def resolver_pqrs():
                 "error": "Sistema no disponible"
             }), 503
         
-        # Obtener datos del request
         data = request.get_json()
         
         if not data or 'problema' not in data:
@@ -175,17 +148,6 @@ def resolver_pqrs():
                 "errores": validacion["errores"],
                 "advertencias": validacion["advertencias"]
             }
-            
-            # Si se solicita ejecución automática
-            if ejecutar_automatico and validacion["puede_ejecutar"] and not validacion["requiere_aprobacion"]:
-                response["ejecutado"] = True
-                response["mensaje_ejecucion"] = "SQL ejecutado automáticamente (SIMULADO en esta versión)"
-            else:
-                response["ejecutado"] = False
-                if validacion["requiere_aprobacion"]:
-                    response["mensaje_ejecucion"] = f"Requiere aprobación de {validacion['nivel_aprobacion']}"
-                elif not validacion["puede_ejecutar"]:
-                    response["mensaje_ejecucion"] = "Operación bloqueada por seguridad"
         
         return jsonify(response)
     
@@ -203,26 +165,7 @@ def resolver_pqrs():
 
 @app.route('/api/validar-sql', methods=['POST'])
 def validar_sql():
-    """
-    Valida un SQL antes de ejecutarlo
-    
-    Body:
-    {
-        "sql": "UPDATE formatexceldlle SET Estado = 77 WHERE Credit = '123'",
-        "tipo_operacion": "cambio_estado",  // opcional
-        "datos_contexto": { ... }  // opcional
-    }
-    
-    Response:
-    {
-        "success": true,
-        "puede_ejecutar": true,
-        "requiere_aprobacion": false,
-        "nivel_aprobacion": "automatico",
-        "razon": "...",
-        ...
-    }
-    """
+    """Valida un SQL antes de ejecutarlo"""
     try:
         if not validador:
             return jsonify({
@@ -275,24 +218,7 @@ def validar_sql():
 
 @app.route('/api/ensenar-caso', methods=['POST'])
 def ensenar_caso():
-    """
-    Agrega un caso nuevo al sistema
-    
-    Body:
-    {
-        "categoria": "Estados",
-        "problema": "Para el crédito [CREDITO] cambiar estado a 77",
-        "sql": "UPDATE formatexceldlle SET Estado = 77 WHERE Credit = '[CREDITO]'",
-        "respuesta": "Estado actualizado correctamente"
-    }
-    
-    Response:
-    {
-        "success": true,
-        "mensaje": "Caso agregado exitosamente",
-        "caso_id": 28
-    }
-    """
+    """Agrega un caso nuevo al sistema"""
     try:
         if not sistema:
             return jsonify({
@@ -347,20 +273,7 @@ def ensenar_caso():
 
 @app.route('/api/casos', methods=['GET'])
 def listar_casos():
-    """
-    Lista todos los casos del sistema
-    
-    Query params:
-    - categoria: filtrar por categoría
-    - limit: número máximo de resultados (default: 100)
-    
-    Response:
-    {
-        "success": true,
-        "total": 27,
-        "casos": [ ... ]
-    }
-    """
+    """Lista todos los casos del sistema"""
     try:
         if not sistema:
             return jsonify({
@@ -368,14 +281,11 @@ def listar_casos():
                 "error": "Sistema no disponible"
             }), 503
         
-        # Obtener parámetros
         categoria_filtro = request.args.get('categoria')
         limit = int(request.args.get('limit', 100))
         
-        # Obtener casos
         casos = sistema.obtener_todos_casos()
         
-        # Formatear casos
         casos_formateados = []
         for i, caso in enumerate(casos, 1):
             if len(caso) >= 4:
@@ -387,14 +297,11 @@ def listar_casos():
                     "respuesta": caso[4] if len(caso) > 4 else ""
                 }
                 
-                # Filtrar por categoría si se especifica
                 if not categoria_filtro or caso_dict['categoria'] == categoria_filtro:
                     casos_formateados.append(caso_dict)
         
-        # Limitar resultados
         casos_formateados = casos_formateados[:limit]
         
-        # Agrupar por categoría
         categorias = {}
         for caso in casos_formateados:
             cat = caso['categoria']
@@ -421,18 +328,7 @@ def listar_casos():
 
 @app.route('/api/estadisticas', methods=['GET'])
 def estadisticas():
-    """
-    Retorna estadísticas del sistema
-    
-    Response:
-    {
-        "success": true,
-        "total_casos": 27,
-        "casos_por_categoria": { ... },
-        "precision_promedio": 92,
-        ...
-    }
-    """
+    """Retorna estadísticas del sistema"""
     try:
         if not sistema:
             return jsonify({
@@ -440,10 +336,8 @@ def estadisticas():
                 "error": "Sistema no disponible"
             }), 503
         
-        # Obtener casos
         casos = sistema.obtener_todos_casos()
         
-        # Calcular estadísticas
         categorias = {}
         for caso in casos:
             if len(caso) >= 2:
@@ -455,7 +349,7 @@ def estadisticas():
             "total_casos": len(casos),
             "casos_por_categoria": categorias,
             "categorias_unicas": len(categorias),
-            "precision_estimada": 92,  # Placeholder
+            "precision_estimada": 92,
             "tiempo_ahorro_estimado": "85%",
             "ahorro_mensual_usd": 4800,
             "timestamp": datetime.now().isoformat()
@@ -476,17 +370,7 @@ def estadisticas():
 
 @app.route('/api/health', methods=['GET'])
 def health():
-    """
-    Verifica que la API está funcionando
-    
-    Response:
-    {
-        "status": "ok",
-        "sistema_disponible": true,
-        "validador_disponible": true,
-        "timestamp": "..."
-    }
-    """
+    """Verifica que la API está funcionando"""
     return jsonify({
         "status": "ok",
         "sistema_disponible": sistema is not None,
@@ -519,23 +403,21 @@ def extraer_datos_contexto(problema: str, sql: str, tipo: str) -> dict:
     """Extrae datos de contexto"""
     contexto = {}
     
-    # Extraer crédito
     creditos = re.findall(r'\d{13,16}', problema)
     if creditos:
         contexto["credit_number"] = creditos[0]
     
-    # Según tipo
     if tipo == "cambio_estado":
         matches = re.findall(r'EstadoLiquidacion\w+\s*=\s*(\d+)', sql, re.IGNORECASE)
         if matches:
             contexto["estado_nuevo"] = int(matches[0])
-        contexto["estado_actual"] = 71  # Placeholder
+        contexto["estado_actual"] = 71
     
     elif tipo == "cambio_comision":
         matches = re.findall(r'ValueCommission\s*=\s*(\d+)', sql, re.IGNORECASE)
         if matches:
             contexto["valor_nuevo"] = int(matches[0])
-        contexto["valor_actual"] = 250000  # Placeholder
+        contexto["valor_actual"] = 250000
     
     return contexto
 
@@ -560,84 +442,29 @@ def index():
             .method { color: #10b981; font-weight: bold; }
             code { background: #334155; padding: 2px 6px; border-radius: 4px; color: #a9b1d6; }
             pre { background: #1a1b26; padding: 15px; border-radius: 8px; overflow-x: auto; }
-            a { color: #6366f1; text-decoration: none; }
-            a:hover { text-decoration: underline; }
         </style>
     </head>
     <body>
         <h1>🤖 API REST - Sistema PQRS IA</h1>
-        <p>Documentación de endpoints disponibles</p>
+        <p>API funcionando correctamente</p>
         
         <div class="endpoint">
             <h3><span class="method">GET</span> /api/health</h3>
             <p>Verifica que la API está funcionando</p>
-            <pre>curl http://localhost:5000/api/health</pre>
         </div>
         
         <div class="endpoint">
             <h3><span class="method">POST</span> /api/resolver-pqrs</h3>
             <p>Busca una solución para un problema PQRS</p>
-            <pre>curl -X POST http://localhost:5000/api/resolver-pqrs \\
-  -H "Content-Type: application/json" \\
-  -d '{
-    "problema": "Para el crédito 5800325002956151 cambiar estado a 77",
-    "incluir_validacion": true
-  }'</pre>
-        </div>
-        
-        <div class="endpoint">
-            <h3><span class="method">POST</span> /api/validar-sql</h3>
-            <p>Valida un SQL antes de ejecutarlo</p>
-            <pre>curl -X POST http://localhost:5000/api/validar-sql \\
-  -H "Content-Type: application/json" \\
-  -d '{
-    "sql": "UPDATE formatexceldlle SET Estado = 77 WHERE Credit = '123'"
-  }'</pre>
-        </div>
-        
-        <div class="endpoint">
-            <h3><span class="method">POST</span> /api/ensenar-caso</h3>
-            <p>Agrega un caso nuevo al sistema</p>
-            <pre>curl -X POST http://localhost:5000/api/ensenar-caso \\
-  -H "Content-Type: application/json" \\
-  -d '{
-    "categoria": "Estados",
-    "problema": "Cambiar estado a 77",
-    "sql": "UPDATE ...",
-    "respuesta": "Estado actualizado"
-  }'</pre>
-        </div>
-        
-        <div class="endpoint">
-            <h3><span class="method">GET</span> /api/casos</h3>
-            <p>Lista todos los casos del sistema</p>
-            <pre>curl http://localhost:5000/api/casos?categoria=Estados&limit=10</pre>
         </div>
         
         <div class="endpoint">
             <h3><span class="method">GET</span> /api/estadisticas</h3>
             <p>Retorna estadísticas del sistema</p>
-            <pre>curl http://localhost:5000/api/estadisticas</pre>
         </div>
         
-        <h2>📚 Ejemplos de uso con n8n</h2>
-        <p>Configuración en n8n HTTP Request node:</p>
-        <ul>
-            <li><strong>Method:</strong> POST</li>
-            <li><strong>URL:</strong> http://tu-servidor:5000/api/resolver-pqrs</li>
-            <li><strong>Body Type:</strong> JSON</li>
-            <li><strong>Body:</strong> { "problema": "{{$json.email_body}}", "incluir_validacion": true }</li>
-        </ul>
-        
-        <h2>🔗 Recursos</h2>
-        <ul>
-            <li><a href="/api/health">Health Check</a></li>
-            <li><a href="/api/estadisticas">Estadísticas</a></li>
-            <li><a href="/api/casos?limit=5">Últimos 5 casos</a></li>
-        </ul>
-        
         <hr>
-        <p style="text-align: center; color: #64748b;">API PQRS v1.0 | Desarrollado por Daner Mosquera</p>
+        <p style="text-align: center; color: #64748b;">API PQRS v1.0 | Daner Mosquera</p>
     </body>
     </html>
     """
@@ -648,39 +475,17 @@ def index():
 # ═══════════════════════════════════════════════════════════════
 
 if __name__ == '__main__':
-    print("""
-    ═══════════════════════════════════════════════════════════
-      🚀 API PQRS IA - INICIANDO
-    ═══════════════════════════════════════════════════════════
-    """)
+    port = int(os.environ.get('PORT', 5000))
+    
+    print(f"🚀 API PQRS IA iniciando en puerto {port}...")
     
     if not SISTEMA_DISPONIBLE:
-        print("⚠️ ADVERTENCIA: Sistema PQRS no disponible")
-        print("   La API funcionará con capacidades limitadas")
+        print("⚠️ Sistema PQRS no disponible (modo limitado)")
     else:
-        print("✅ Sistema PQRS cargado correctamente")
+        print("✅ Sistema PQRS listo")
     
-    print("""
-    📡 Endpoints disponibles:
-       GET    /                       → Documentación
-       GET    /api/health             → Health check
-       POST   /api/resolver-pqrs      → Resolver PQRS
-       POST   /api/validar-sql        → Validar SQL
-       POST   /api/ensenar-caso       → Agregar caso
-       GET    /api/casos              → Listar casos
-       GET    /api/estadisticas       → Estadísticas
-    
-    🌐 Servidor corriendo en: http://localhost:5000
-    📚 Documentación en: http://localhost:5000
-    
-    Presiona Ctrl+C para detener
-    ═══════════════════════════════════════════════════════════
-    """)
-    
-    # Iniciar servidor
-    port = int(os.environ.get('PORT', 5000))  # ← Railway usa variable PORT
     app.run(
         host='0.0.0.0',
         port=port,
-        debug=False  # ← False en producción
+        debug=False
     )
